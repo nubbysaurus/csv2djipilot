@@ -12,10 +12,11 @@ parser.add_argument('csvfile', type=argparse.FileType('r'),
 #parser.add_argument('-outputfile',type=string, required=False, default="pilot.kml")
 parser.add_argument('-o', '--output', type=argparse.FileType('w'),
                     default=sys.stdout, help="Specify output file (default:stdout)")
-parser.add_argument('--onfinish', default='hover',
-                    choices=['hover', 'gohome'],
-                    help='Aircraft action when finish. hover or gohome (default: %(default)s)'
-                    )
+parser.add_argument(
+    '--onfinish', default='hover',
+    choices=['hover', 'gohome'],
+    help='Aircraft action when finish. hover or gohome (default: %(default)s)'
+)
 args = parser.parse_args()
 
 if args.onfinish == 'hover':
@@ -84,6 +85,23 @@ waypoint_start = Template("""      <Placemark>
           <mis:pointType>LineStop</mis:pointType>
           <mis:cornerRadius>0.2</mis:cornerRadius>""")
 
+waypoint_start_no_heading = Template("""      <Placemark>
+        <name>Waypoint$waypoint_number</name>
+        <visibility>1</visibility>
+        <description>Waypoint</description>
+        <styleUrl>#waypointStyle</styleUrl>
+        <ExtendedData xmlns:mis="www.dji.com">
+          <mis:useWaylineAltitude>false</mis:useWaylineAltitude>
+          <mis:turnMode>$turnmode</mis:turnMode>
+          <mis:gimbalPitch>$gimbal</mis:gimbalPitch>
+          <mis:useWaylineSpeed>false</mis:useWaylineSpeed>
+          <mis:speed>$speed</mis:speed>
+          <mis:useWaylineHeadingMode>true</mis:useWaylineHeadingMode>
+          <mis:useWaylinePointType>true</mis:useWaylinePointType>
+          <mis:pointType>LineStop</mis:pointType>
+          <mis:cornerRadius>0.2</mis:cornerRadius>""")
+
+
 
 waypoint_end = Template("""
         </ExtendedData>
@@ -150,10 +168,12 @@ with open(CsvFile, newline='') as csvfile:
     dialect = csv.Sniffer().sniff(csvfile.read(1024))
     csvfile.seek(0)
     csv_lines = csv.reader(csvfile, dialect)
+    has_heading: bool = True
     if CSV_HEADER:
         next(csv_lines, None)  # skip the headers
 
     for row in csv_lines:
+        has_heading = True if len(row) == 9 else False
         if row:
             print(row)
             name = row[0]
@@ -164,11 +184,19 @@ with open(CsvFile, newline='') as csvfile:
             if lat[0] == '_':
                 lon = lat[1:]
             height = row[3]
-            heading = row[4]
-            gimbal = row[5]
-            speed = row[6]
-            turnmode = row[7]
-            actions_sequence = row[8]
+            # Omit heading in CSV is you want to follow the wayline.
+            if not has_heading:
+                heading = None
+                gimbal = row[4]
+                speed = row[5]
+                turnmode = row[6]
+                actions_sequence = row[7]
+            else:
+                heading = row[4]
+                gimbal = row[5]
+                speed = row[6]
+                turnmode = row[7]
+                actions_sequence = row[8]
 
             if (float(speed) > 15) or (float(speed) <= 0):
                 sys.exit('speed should be >0 or <=15 m/s for {}'.format(name))
@@ -187,8 +215,21 @@ with open(CsvFile, newline='') as csvfile:
             else:
                 sys.exit('turnmode shoud be AUTO C or CC for {}'.format(name))
 
-            XML_string += waypoint_start.substitute(
-                turnmode=turnmode, waypoint_number=waypoint_number, speed=speed, heading=heading, gimbal=gimbal)
+            if not has_heading:
+                XML_string += waypoint_start_no_heading.substitute(
+                    turnmode=turnmode,
+                    waypoint_number=waypoint_number,
+                    speed=speed,
+                    gimbal=gimbal
+                )
+            else:
+                XML_string += waypoint_start.substitute(
+                    turnmode=turnmode,
+                    waypoint_number=waypoint_number,
+                    speed=speed,
+                    heading=heading,
+                    gimbal=gimbal
+                )
 
             # Actions decoding
             if actions_sequence:
