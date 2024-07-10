@@ -45,6 +45,34 @@ print(f'{CsvFile} to {args.output.name}')
 #CsvFile = 'exemple_simple.csv'
 CSV_HEADER = False
 
+new_XML_string = """<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2" xmlns="http://www.dji.com/wpmz/1.0.2">
+  <Document xmlns="">
+    <name>chambon_small</name>
+    <open>1</open>
+    <ExtendedData xmlns:mis="www.dji.com" xmlns:wpml="http://www.dji.com/wpmz/1.0.2">
+      <mis:type>Waypoint</mis:type>
+      <mis:stationType>0</mis:stationType>
+      <wpml:globalWaypointHeadingParam>followWayline</wpml:globalWaypointHeadingParam>
+      <wpml:useGlobalHeadingParam>1</wpml:useGlobalHeadingParam>
+    </ExtendedData>
+    <Style id="waylineGreenPoly">
+      <LineStyle>
+        <color>FF0AEE8B</color>
+        <width>6</width>
+      </LineStyle>
+    </Style>
+    <Style id="waypointStyle">
+      <IconStyle>
+        <Icon>
+          <href>https://cdnen.dji-flighthub.com/static/app/images/point.png</href>
+        </Icon>
+      </IconStyle>
+    </Style>
+    <Folder>
+      <name>Waypoints</name>
+      <description>Waypoints in the Mission.</description>\n"""
+
 XML_string = """<?xml version="1.0" encoding="UTF-8"?>
 
 <kml xmlns="http://www.opengis.net/kml/2.2">
@@ -85,7 +113,7 @@ waypoint_start = Template("""      <Placemark>
         <visibility>1</visibility>
         <description>Waypoint</description>
         <styleUrl>#waypointStyle</styleUrl>
-        <ExtendedData xmlns:mis="www.dji.com">
+        <ExtendedData xmlns:mis="www.dji.com" xmlns:wpml="http://www.dji.com/wpmz/1.0.2">
           <mis:useWaylineAltitude>false</mis:useWaylineAltitude>
           <mis:heading>$heading</mis:heading>
           <mis:turnMode>$turnmode</mis:turnMode>
@@ -102,10 +130,10 @@ waypoint_start_no_heading = Template("""      <Placemark>
         <visibility>1</visibility>
         <description>Waypoint</description>
         <styleUrl>#waypointStyle</styleUrl>
-        <ExtendedData xmlns:mis="www.dji.com">
-          <mis:useWaylineAltitude>false</mis:useWaylineAltitude>
-          <mis:useWaylineSpeed>false</mis:useWaylineSpeed>
-          <mis:speed>2.2</mis:speed>#
+        <ExtendedData xmlns:mis="www.dji.com" xmlns:wpml="http://www.dji.com/wpmz/1.0.2">
+          <wpml:autoFlightSpeed>2.3</wpml:autoFlightSpeed>
+          <mis:useWaylineAltitude>true</mis:useWaylineAltitude>
+          <mis:speed>2.3</mis:speed>#
           <mis:useWaylineHeadingMode>true</mis:useWaylineHeadingMode>
           <mis:useWaylinePointType>true</mis:useWaylinePointType>
           <mis:pointType>LineStop</mis:pointType>
@@ -192,7 +220,7 @@ def csv2djipilot():
             if lat[0] == '_':
                 lon = lat[1:]
             gimbal = row['gimbal'] if 'speed' in row.keys() else DEFAULT_GIMBAL
-            heading = row['heading'] if 'speed' in row.keys() else DEFAULT_HEADING
+            heading = row['heading'] if 'heading' in row.keys() else DEFAULT_HEADING
             height = row['height'] if 'height' in row.keys() else DEFAULT_HEIGHT
             speed = row['speed'] if 'speed' in row.keys() else DEFAULT_SPEED
             if 'turnmode' in row.keys():
@@ -224,13 +252,13 @@ def csv2djipilot():
                 sys.exit('turnmode shoud be AUTO C or CC for {}'.format(name))
 
             if not heading:
-                XML_string += waypoint_start_no_heading.substitute(
+                new_XML_string += waypoint_start_no_heading.substitute(
                     turnmode=turnmode,
                     waypoint_number=waypoint_number,
                     speed=speed,
                 )
             else:
-                XML_string += waypoint_start.substitute(
+                new_XML_string += waypoint_start.substitute(
                     turnmode=turnmode,
                     waypoint_number=waypoint_number,
                     speed=speed,
@@ -243,28 +271,28 @@ def csv2djipilot():
                 action_list = actions_sequence.split('.')
                 for action in action_list:
                     if action == 'SHOOT':
-                        XML_string += shoot_template.substitute()
+                        new_XML_string += shoot_template.substitute()
                     elif action == 'REC':
-                        XML_string += record_template.substitute()
+                        new_XML_string += record_template.substitute()
                     elif action == 'STOPREC':
-                        XML_string += stoprecord_template.substitute()
+                        new_XML_string += stoprecord_template.substitute()
                     # Gimbal orientation
                     elif action[0] == 'G':
-                        XML_string += gimbal_template.substitute(
+                        new_XML_string += gimbal_template.substitute(
                             gimbal_angle=action[1:])
                     # Aircraft orientation
                     elif action[0] == 'A':
-                        XML_string += aircraftyaw_template.substitute(
+                        new_XML_string += aircraftyaw_template.substitute(
                             aircraftyaw=action[1:])
                     elif action[0] == 'H':
                         if float(action[1:]) < 500:
                             print(float(action[1:]))
                             sys.exit(
                                 'Hover length is in ms and should be >500  for {}'.format(name))
-                        XML_string += hover_template.substitute(
+                        new_XML_string += hover_template.substitute(
                             length=action[1:])
 
-            XML_string += "\n" + \
+            new_XML_string += "\n" + \
                 waypoint_end.substitute(lon=lon, lat=lat, height=height,)+"\n"
 
             all_coordinates += all_coordinates_template.substitute(
@@ -272,9 +300,9 @@ def csv2djipilot():
         waypoint_number += 1
 # remove last space from coordinates string
     all_coordinates = all_coordinates[:-1]
-    XML_string += xml_end.substitute(all_coordinates=all_coordinates,
+    new_XML_string += xml_end.substitute(all_coordinates=all_coordinates,
                                      ON_FINISH=ON_FINISH)
-    _write_file(path=args.output, data=XML_string)
+    _write_file(path=args.output, data=new_XML_string)
     
 
 if __name__ == "__main__":
