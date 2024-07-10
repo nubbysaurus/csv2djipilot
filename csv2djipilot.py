@@ -170,105 +170,112 @@ xml_end = Template("""    </Folder>
   </Document>
 </kml>""")
 
-with open(CsvFile, newline='') as csvfile:
-    # TODO(nubby): allow for the import of other delimiters.
-    # NOTE - Required attributes:
-    #           * point_name
-    #           * lat
-    #           * lon
-    csv_lines = csv.DictReader(csvfile)
-    for row in csv_lines:
-        name = row['point_name']
-        lon = row['lon']
-        lat = row['lat']
-        if lon[0] == '_':
-            lon = lon[1:]
-        if lat[0] == '_':
-            lon = lat[1:]
-        gimbal = row['gimbal'] if 'speed' in row.keys() else DEFAULT_GIMBAL
-        heading = row['heading'] if 'speed' in row.keys() else DEFAULT_HEADING
-        height = row['height'] if 'height' in row.keys() else DEFAULT_HEIGHT
-        speed = row['speed'] if 'speed' in row.keys() else DEFAULT_SPEED
-        if 'turnmode' in row.keys():
-            turnmode = row['turnmode'] 
-        else:
-            turnmode = DEFAULT_TURNMODE
-        if 'actions_sequence' in row.keys():
-            actions_sequence = row['actions_sequence'] 
-        else:
-            actions_sequence = DEFAULT_ACTIONS_SEQUENCE
+def _write_file(path: str, data: str):
+    with open(path, "w+") as fp:
+        fp.write(data)
 
-        if (float(speed) > 15) or (float(speed) <= 0):
-            sys.exit('speed should be >0 or <=15 m/s for {}'.format(name))
-        """
-        if '.' not in speed:
-            speed = speed+'.0'
-        """
 
-        if gimbal and '.' not in gimbal:
-            gimbal = gimbal+'.0'
+def csv2djipilot():
+    with open(CsvFile, newline='') as csvfile:
+        # TODO(nubby): allow for the import of other delimiters.
+        # NOTE - Required attributes:
+        #           * point_name
+        #           * lat
+        #           * lon
+        csv_lines = csv.DictReader(csvfile)
+        for row in csv_lines:
+            name = row['point_name']
+            lon = row['lon']
+            lat = row['lat']
+            if lon[0] == '_':
+                lon = lon[1:]
+            if lat[0] == '_':
+                lon = lat[1:]
+            gimbal = row['gimbal'] if 'speed' in row.keys() else DEFAULT_GIMBAL
+            heading = row['heading'] if 'speed' in row.keys() else DEFAULT_HEADING
+            height = row['height'] if 'height' in row.keys() else DEFAULT_HEIGHT
+            speed = row['speed'] if 'speed' in row.keys() else DEFAULT_SPEED
+            if 'turnmode' in row.keys():
+                turnmode = row['turnmode'] 
+            else:
+                turnmode = DEFAULT_TURNMODE
+            if 'actions_sequence' in row.keys():
+                actions_sequence = row['actions_sequence'] 
+            else:
+                actions_sequence = DEFAULT_ACTIONS_SEQUENCE
 
-        if turnmode == 'AUTO':
-            turnmode = 'Auto'
-        elif turnmode == 'C':
-            turnmode = 'Clockwise'
-        elif turnmode == 'CC':
-            turnmode = 'Counterclockwise'
-        else:
-            sys.exit('turnmode shoud be AUTO C or CC for {}'.format(name))
+            if (float(speed) > 15) or (float(speed) <= 0):
+                sys.exit('speed should be >0 or <=15 m/s for {}'.format(name))
+            """
+            if '.' not in speed:
+                speed = speed+'.0'
+            """
 
-        if not heading:
-            XML_string += waypoint_start_no_heading.substitute(
-                turnmode=turnmode,
-                waypoint_number=waypoint_number,
-                speed=speed,
-            )
-        else:
-            XML_string += waypoint_start.substitute(
-                turnmode=turnmode,
-                waypoint_number=waypoint_number,
-                speed=speed,
-                heading=heading,
-                gimbal=gimbal
-            )
+            if gimbal and '.' not in gimbal:
+                gimbal = gimbal+'.0'
 
-        # Actions decoding
-        if actions_sequence:
-            action_list = actions_sequence.split('.')
-            for action in action_list:
-                if action == 'SHOOT':
-                    XML_string += shoot_template.substitute()
-                elif action == 'REC':
-                    XML_string += record_template.substitute()
-                elif action == 'STOPREC':
-                    XML_string += stoprecord_template.substitute()
-                # Gimbal orientation
-                elif action[0] == 'G':
-                    XML_string += gimbal_template.substitute(
-                        gimbal_angle=action[1:])
-                # Aircraft orientation
-                elif action[0] == 'A':
-                    XML_string += aircraftyaw_template.substitute(
-                        aircraftyaw=action[1:])
-                elif action[0] == 'H':
-                    if float(action[1:]) < 500:
-                        print(float(action[1:]))
-                        sys.exit(
-                            'Hover length is in ms and should be >500  for {}'.format(name))
-                    XML_string += hover_template.substitute(
-                        length=action[1:])
+            if turnmode == 'AUTO':
+                turnmode = 'Auto'
+            elif turnmode == 'C':
+                turnmode = 'Clockwise'
+            elif turnmode == 'CC':
+                turnmode = 'Counterclockwise'
+            else:
+                sys.exit('turnmode shoud be AUTO C or CC for {}'.format(name))
 
-        XML_string += "\n" + \
-            waypoint_end.substitute(lon=lon, lat=lat, height=height,)+"\n"
+            if not heading:
+                XML_string += waypoint_start_no_heading.substitute(
+                    turnmode=turnmode,
+                    waypoint_number=waypoint_number,
+                    speed=speed,
+                )
+            else:
+                XML_string += waypoint_start.substitute(
+                    turnmode=turnmode,
+                    waypoint_number=waypoint_number,
+                    speed=speed,
+                    heading=heading,
+                    gimbal=gimbal
+                )
 
-        all_coordinates += all_coordinates_template.substitute(
-            lon=lon, lat=lat, height=height)+" "
-    waypoint_number += 1
+            # Actions decoding
+            if actions_sequence:
+                action_list = actions_sequence.split('.')
+                for action in action_list:
+                    if action == 'SHOOT':
+                        XML_string += shoot_template.substitute()
+                    elif action == 'REC':
+                        XML_string += record_template.substitute()
+                    elif action == 'STOPREC':
+                        XML_string += stoprecord_template.substitute()
+                    # Gimbal orientation
+                    elif action[0] == 'G':
+                        XML_string += gimbal_template.substitute(
+                            gimbal_angle=action[1:])
+                    # Aircraft orientation
+                    elif action[0] == 'A':
+                        XML_string += aircraftyaw_template.substitute(
+                            aircraftyaw=action[1:])
+                    elif action[0] == 'H':
+                        if float(action[1:]) < 500:
+                            print(float(action[1:]))
+                            sys.exit(
+                                'Hover length is in ms and should be >500  for {}'.format(name))
+                        XML_string += hover_template.substitute(
+                            length=action[1:])
+
+            XML_string += "\n" + \
+                waypoint_end.substitute(lon=lon, lat=lat, height=height,)+"\n"
+
+            all_coordinates += all_coordinates_template.substitute(
+                lon=lon, lat=lat, height=height)+" "
+        waypoint_number += 1
 # remove last space from coordinates string
-all_coordinates = all_coordinates[:-1]
-XML_string += xml_end.substitute(all_coordinates=all_coordinates,
-                                 ON_FINISH=ON_FINISH)
-
-with args.output as outpufile:
-    outpufile.write(XML_string)
+    all_coordinates = all_coordinates[:-1]
+    XML_string += xml_end.substitute(all_coordinates=all_coordinates,
+                                     ON_FINISH=ON_FINISH)
+    _write_file(path=args.output, data=XML_string)
     
+
+if __name__ == "__main__":
+    csv2djipilot()
