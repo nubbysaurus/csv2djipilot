@@ -45,165 +45,165 @@ print(f'{CsvFile} to {args.output.name}')
 #CsvFile = 'exemple_simple.csv'
 CSV_HEADER = False
 
-new_XML_string = """<?xml version="1.0" encoding="UTF-8"?>
-<kml xmlns="http://www.opengis.net/kml/2.2" xmlns="http://www.dji.com/wpmz/1.0.2">
-  <Document xmlns="">
-    <name>chambon_small</name>
-    <open>1</open>
-    <ExtendedData xmlns:mis="www.dji.com" xmlns:wpml="http://www.dji.com/wpmz/1.0.2">
-      <mis:type>Waypoint</mis:type>
-      <mis:stationType>0</mis:stationType>
-      <wpml:globalWaypointHeadingParam>followWayline</wpml:globalWaypointHeadingParam>
-      <wpml:useGlobalHeadingParam>1</wpml:useGlobalHeadingParam>
-    </ExtendedData>
-    <Style id="waylineGreenPoly">
-      <LineStyle>
-        <color>FF0AEE8B</color>
-        <width>6</width>
-      </LineStyle>
-    </Style>
-    <Style id="waypointStyle">
-      <IconStyle>
-        <Icon>
-          <href>https://cdnen.dji-flighthub.com/static/app/images/point.png</href>
-        </Icon>
-      </IconStyle>
-    </Style>
-    <Folder>
-      <name>Waypoints</name>
-      <description>Waypoints in the Mission.</description>\n"""
+def _write_file(path: str, data: any):
+    with open(path, "w+") as fp:
+        fp.write(data)
 
-XML_string = """<?xml version="1.0" encoding="UTF-8"?>
 
-<kml xmlns="http://www.opengis.net/kml/2.2">
-  <Document xmlns="">
-    <name>chambon_small</name>
-    <open>1</open>
-    <ExtendedData xmlns:mis="www.dji.com">
-      <mis:type>Waypoint</mis:type>
-      <mis:stationType>0</mis:stationType>
-    </ExtendedData>
-    <Style id="waylineGreenPoly">
-      <LineStyle>
-        <color>FF0AEE8B</color>
-        <width>6</width>
-      </LineStyle>
-    </Style>
-    <Style id="waypointStyle">
-      <IconStyle>
-        <Icon>
-          <href>https://cdnen.dji-flighthub.com/static/app/images/point.png</href>
-        </Icon>
-      </IconStyle>
-    </Style>
-    <Folder>
-      <name>Waypoints</name>
-      <description>Waypoints in the Mission.</description>\n"""
+def csv2djipilot():
+    new_XML_string = """<?xml version="1.0" encoding="UTF-8"?>
+    <kml xmlns="http://www.opengis.net/kml/2.2" xmlns="http://www.dji.com/wpmz/1.0.2">
+      <Document xmlns="">
+        <name>chambon_small</name>
+        <open>1</open>
+        <ExtendedData xmlns:mis="www.dji.com" xmlns:wpml="http://www.dji.com/wpmz/1.0.2">
+          <mis:type>Waypoint</mis:type>
+          <mis:stationType>0</mis:stationType>
+          <wpml:globalWaypointHeadingParam>followWayline</wpml:globalWaypointHeadingParam>
+          <wpml:useGlobalHeadingParam>1</wpml:useGlobalHeadingParam>
+        </ExtendedData>
+        <Style id="waylineGreenPoly">
+          <LineStyle>
+            <color>FF0AEE8B</color>
+            <width>6</width>
+          </LineStyle>
+        </Style>
+        <Style id="waypointStyle">
+          <IconStyle>
+            <Icon>
+              <href>https://cdnen.dji-flighthub.com/static/app/images/point.png</href>
+            </Icon>
+          </IconStyle>
+        </Style>
+        <Folder>
+          <name>Waypoints</name>
+          <description>Waypoints in the Mission.</description>\n"""
+
+    XML_string = """<?xml version="1.0" encoding="UTF-8"?>
+
+    <kml xmlns="http://www.opengis.net/kml/2.2">
+      <Document xmlns="">
+        <name>chambon_small</name>
+        <open>1</open>
+        <ExtendedData xmlns:mis="www.dji.com">
+          <mis:type>Waypoint</mis:type>
+          <mis:stationType>0</mis:stationType>
+        </ExtendedData>
+        <Style id="waylineGreenPoly">
+          <LineStyle>
+            <color>FF0AEE8B</color>
+            <width>6</width>
+          </LineStyle>
+        </Style>
+        <Style id="waypointStyle">
+          <IconStyle>
+            <Icon>
+              <href>https://cdnen.dji-flighthub.com/static/app/images/point.png</href>
+            </Icon>
+          </IconStyle>
+        </Style>
+        <Folder>
+          <name>Waypoints</name>
+          <description>Waypoints in the Mission.</description>\n"""
 #name = None
 #lon = None
 #lat = None
 #height = None
 #heading = None
 ##gimbal = None
-all_coordinates = ""
-waypoint_number = 1
+    all_coordinates = ""
+    waypoint_number = 1
 
-waypoint_start = Template("""      <Placemark>
-        <name>Waypoint$waypoint_number</name>
-        <visibility>1</visibility>
-        <description>Waypoint</description>
-        <styleUrl>#waypointStyle</styleUrl>
-        <ExtendedData xmlns:mis="www.dji.com" xmlns:wpml="http://www.dji.com/wpmz/1.0.2">
-          <mis:useWaylineAltitude>false</mis:useWaylineAltitude>
-          <mis:heading>$heading</mis:heading>
-          <mis:turnMode>$turnmode</mis:turnMode>
-          <mis:gimbalPitch>$gimbal</mis:gimbalPitch>
-          <mis:useWaylineSpeed>false</mis:useWaylineSpeed>
-          <mis:speed>$speed</mis:speed>
-          <mis:useWaylineHeadingMode>true</mis:useWaylineHeadingMode>
-          <mis:useWaylinePointType>true</mis:useWaylinePointType>
-          <mis:pointType>LineStop</mis:pointType>
-          <mis:cornerRadius>0.2</mis:cornerRadius>""")
+    waypoint_start = Template("""      <Placemark>
+            <name>Waypoint$waypoint_number</name>
+            <visibility>1</visibility>
+            <description>Waypoint</description>
+            <styleUrl>#waypointStyle</styleUrl>
+            <ExtendedData xmlns:mis="www.dji.com" xmlns:wpml="http://www.dji.com/wpmz/1.0.2">
+              <mis:useWaylineAltitude>false</mis:useWaylineAltitude>
+              <mis:heading>$heading</mis:heading>
+              <mis:turnMode>$turnmode</mis:turnMode>
+              <mis:gimbalPitch>$gimbal</mis:gimbalPitch>
+              <mis:useWaylineSpeed>false</mis:useWaylineSpeed>
+              <mis:speed>$speed</mis:speed>
+              <mis:useWaylineHeadingMode>true</mis:useWaylineHeadingMode>
+              <mis:useWaylinePointType>true</mis:useWaylinePointType>
+              <mis:pointType>LineStop</mis:pointType>
+              <mis:cornerRadius>0.2</mis:cornerRadius>""")
 
-waypoint_start_no_heading = Template("""      <Placemark>
-        <name>Waypoint$waypoint_number</name>
-        <visibility>1</visibility>
-        <description>Waypoint</description>
-        <styleUrl>#waypointStyle</styleUrl>
-        <ExtendedData xmlns:mis="www.dji.com" xmlns:wpml="http://www.dji.com/wpmz/1.0.2">
-          <wpml:autoFlightSpeed>2.3</wpml:autoFlightSpeed>
-          <mis:useWaylineAltitude>true</mis:useWaylineAltitude>
-          <mis:speed>2.3</mis:speed>#
-          <mis:useWaylineHeadingMode>true</mis:useWaylineHeadingMode>
-          <mis:useWaylinePointType>true</mis:useWaylinePointType>
-          <mis:pointType>LineStop</mis:pointType>
-          <mis:cornerRadius>0.2</mis:cornerRadius>""")
-
-
-
-waypoint_end = Template("""
-        </ExtendedData>
-        <Point>
-          <altitudeMode>relativeToGround</altitudeMode>
-          <coordinates>$lon,$lat,$height</coordinates>
-        </Point>
-      </Placemark>""")
-hover_template = Template("""
-          <mis:actions param="$length" accuracy="0" cameraIndex="0" payloadType="0" payloadIndex="0">Hovering</mis:actions>""")
-shoot_template = Template("""
-          <mis:actions param="0" accuracy="0" cameraIndex="0" payloadType="0" payloadIndex="0">ShootPhoto</mis:actions>""")
-
-gimbal_template = Template("""
-          <mis:actions param="$gimbal_angle" accuracy="1" cameraIndex="0" payloadType="0" payloadIndex="0">GimbalPitch</mis:actions>""")
-aircraftyaw_template = Template("""
-          <mis:actions param="$aircraftyaw" accuracy="0" cameraIndex="0" payloadType="0" payloadIndex="0">AircraftYaw</mis:actions>""")
-record_template = Template("""
-          <mis:actions param="0" accuracy="0" cameraIndex="0" payloadType="0" payloadIndex="0">StartRecording</mis:actions>""")
-stoprecord_template = Template("""
-          <mis:actions param="0" accuracy="0" cameraIndex="0" payloadType="0" payloadIndex="0">StopRecording</mis:actions>""")
+    waypoint_start_no_heading = Template("""      <Placemark>
+            <name>Waypoint$waypoint_number</name>
+            <visibility>1</visibility>
+            <description>Waypoint</description>
+            <styleUrl>#waypointStyle</styleUrl>
+            <ExtendedData xmlns:mis="www.dji.com" xmlns:wpml="http://www.dji.com/wpmz/1.0.2">
+              <wpml:autoFlightSpeed>2.3</wpml:autoFlightSpeed>
+              <mis:useWaylineAltitude>true</mis:useWaylineAltitude>
+              <mis:speed>2.3</mis:speed>#
+              <mis:useWaylineHeadingMode>true</mis:useWaylineHeadingMode>
+              <mis:useWaylinePointType>true</mis:useWaylinePointType>
+              <mis:pointType>LineStop</mis:pointType>
+              <mis:cornerRadius>0.2</mis:cornerRadius>""")
 
 
-all_coordinates_template = Template("$lon,$lat,$height")
+
+    waypoint_end = Template("""
+            </ExtendedData>
+            <Point>
+              <altitudeMode>relativeToGround</altitudeMode>
+              <coordinates>$lon,$lat,$height</coordinates>
+            </Point>
+          </Placemark>""")
+    hover_template = Template("""
+              <mis:actions param="$length" accuracy="0" cameraIndex="0" payloadType="0" payloadIndex="0">Hovering</mis:actions>""")
+    shoot_template = Template("""
+              <mis:actions param="0" accuracy="0" cameraIndex="0" payloadType="0" payloadIndex="0">ShootPhoto</mis:actions>""")
+
+    gimbal_template = Template("""
+              <mis:actions param="$gimbal_angle" accuracy="1" cameraIndex="0" payloadType="0" payloadIndex="0">GimbalPitch</mis:actions>""")
+    aircraftyaw_template = Template("""
+              <mis:actions param="$aircraftyaw" accuracy="0" cameraIndex="0" payloadType="0" payloadIndex="0">AircraftYaw</mis:actions>""")
+    record_template = Template("""
+              <mis:actions param="0" accuracy="0" cameraIndex="0" payloadType="0" payloadIndex="0">StartRecording</mis:actions>""")
+    stoprecord_template = Template("""
+              <mis:actions param="0" accuracy="0" cameraIndex="0" payloadType="0" payloadIndex="0">StopRecording</mis:actions>""")
+
+
+    all_coordinates_template = Template("$lon,$lat,$height")
 #        <mis:altitude>$_CURRENT_ALTITUDE</mis:altitude>
-xml_end = Template("""    </Folder>
-    <Placemark>
-      <name>Wayline</name>
-      <description>Wayline</description>
-      <visibility>1</visibility>
-      <ExtendedData xmlns:mis="www.dji.com">
-        <mis:autoFlightSpeed>2.2</mis:autoFlightSpeed>
-        <mis:actionOnFinish>$ON_FINISH</mis:actionOnFinish>
-        <mis:headingMode>UsePointSetting</mis:headingMode>
-        <mis:gimbalPitchMode>UsePointSetting</mis:gimbalPitchMode>
-        <mis:powerSaveMode>false</mis:powerSaveMode>
-        <mis:waypointType>LineStop</mis:waypointType>
-        <mis:droneInfo>
-          <mis:droneType>COMMON</mis:droneType>
-          <mis:advanceSettings>false</mis:advanceSettings>
-          <mis:droneCameras/>
-          <mis:droneHeight>
-            <mis:useAbsolute>false</mis:useAbsolute>
-            <mis:hasTakeoffHeight>false</mis:hasTakeoffHeight>
-            <mis:takeoffHeight>0.0</mis:takeoffHeight>
-          </mis:droneHeight>
-        </mis:droneInfo>
-      </ExtendedData>
-      <styleUrl>#waylineGreenPoly</styleUrl>
-      <LineString>
-        <tessellate>1</tessellate>
-        <altitudeMode>relativeToGround</altitudeMode>
-        <coordinates>$all_coordinates</coordinates>
-      </LineString>
-    </Placemark>
-  </Document>
-</kml>""")
+    xml_end = Template("""    </Folder>
+        <Placemark>
+          <name>Wayline</name>
+          <description>Wayline</description>
+          <visibility>1</visibility>
+          <ExtendedData xmlns:mis="www.dji.com">
+            <mis:autoFlightSpeed>2.2</mis:autoFlightSpeed>
+            <mis:actionOnFinish>$ON_FINISH</mis:actionOnFinish>
+            <mis:headingMode>UsePointSetting</mis:headingMode>
+            <mis:gimbalPitchMode>UsePointSetting</mis:gimbalPitchMode>
+            <mis:powerSaveMode>false</mis:powerSaveMode>
+            <mis:waypointType>LineStop</mis:waypointType>
+            <mis:droneInfo>
+              <mis:droneType>COMMON</mis:droneType>
+              <mis:advanceSettings>false</mis:advanceSettings>
+              <mis:droneCameras/>
+              <mis:droneHeight>
+                <mis:useAbsolute>false</mis:useAbsolute>
+                <mis:hasTakeoffHeight>false</mis:hasTakeoffHeight>
+                <mis:takeoffHeight>0.0</mis:takeoffHeight>
+              </mis:droneHeight>
+            </mis:droneInfo>
+          </ExtendedData>
+          <styleUrl>#waylineGreenPoly</styleUrl>
+          <LineString>
+            <tessellate>1</tessellate>
+            <altitudeMode>relativeToGround</altitudeMode>
+            <coordinates>$all_coordinates</coordinates>
+          </LineString>
+        </Placemark>
+      </Document>
+    </kml>""")
 
-def _write_file(path: str, data: str):
-    with open(path, "w+") as fp:
-        fp.write(data)
-
-
-def csv2djipilot():
     with open(CsvFile, newline='') as csvfile:
         # TODO(nubby): allow for the import of other delimiters.
         # NOTE - Required attributes:
@@ -302,7 +302,9 @@ def csv2djipilot():
     all_coordinates = all_coordinates[:-1]
     new_XML_string += xml_end.substitute(all_coordinates=all_coordinates,
                                      ON_FINISH=ON_FINISH)
-    _write_file(path=args.output, data=new_XML_string)
+    #_write_file(path=args.output, data=new_XML_string)
+    with args.output as outpoofile:
+        outpoofile.write(new_XML_string)
     
 
 if __name__ == "__main__":
