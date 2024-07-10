@@ -15,7 +15,7 @@ DEFAULT_ACTIONS_SEQUENCE: Union[str, None] = None
 DEFAULT_GIMBAL: Union[float, None] = None
 DEFAULT_HEADING: Union[float, None] = None
 DEFAULT_HEIGHT = 10    # m
-DEFAULT_SPEED = 2.2    # m/s
+DEFAULT_SPEED = 2.3    # m/s
 DEFAULT_TURNMODE = 'AUTO'
 
 parser = argparse.ArgumentParser()
@@ -177,7 +177,7 @@ def csv2djipilot():
           <description>Wayline</description>
           <visibility>1</visibility>
           <ExtendedData xmlns:mis="www.dji.com">
-            <mis:autoFlightSpeed>2.2</mis:autoFlightSpeed>
+            <mis:autoFlightSpeed>2.3</mis:autoFlightSpeed>
             <mis:actionOnFinish>$ON_FINISH</mis:actionOnFinish>
             <mis:headingMode>UsePointSetting</mis:headingMode>
             <mis:gimbalPitchMode>UsePointSetting</mis:gimbalPitchMode>
