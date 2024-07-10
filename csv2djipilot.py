@@ -1,10 +1,22 @@
 #!/usr/bin/env python3
-
+"""
+Todo:
+    * Set header if not supplied.
+"""
 from string import Template
+from typing import Union
 import csv
 import sys
 import argparse
 
+
+#_CURRENT_ALTITUDE = 30
+DEFAULT_ACTIONS_SEQUENCE: Union[str, None] = None
+DEFAULT_GIMBAL: Union[float, None] = None
+DEFAULT_HEADING: Union[float, None] = None
+DEFAULT_HEIGHT = 10    # m
+DEFAULT_SPEED = 2.2    # m/s
+DEFAULT_TURNMODE = 'AUTO'
 
 parser = argparse.ArgumentParser()
 parser.add_argument('csvfile', type=argparse.FileType('r'),
@@ -92,10 +104,8 @@ waypoint_start_no_heading = Template("""      <Placemark>
         <styleUrl>#waypointStyle</styleUrl>
         <ExtendedData xmlns:mis="www.dji.com">
           <mis:useWaylineAltitude>false</mis:useWaylineAltitude>
-          <mis:turnMode>$turnmode</mis:turnMode>
-          <mis:gimbalPitch>$gimbal</mis:gimbalPitch>
           <mis:useWaylineSpeed>false</mis:useWaylineSpeed>
-          <mis:speed>$speed</mis:speed>
+          <mis:speed>2.2</mis:speed>#
           <mis:useWaylineHeadingMode>true</mis:useWaylineHeadingMode>
           <mis:useWaylinePointType>true</mis:useWaylinePointType>
           <mis:pointType>LineStop</mis:pointType>
@@ -126,14 +136,14 @@ stoprecord_template = Template("""
 
 
 all_coordinates_template = Template("$lon,$lat,$height")
+#        <mis:altitude>$_CURRENT_ALTITUDE</mis:altitude>
 xml_end = Template("""    </Folder>
     <Placemark>
       <name>Wayline</name>
       <description>Wayline</description>
       <visibility>1</visibility>
       <ExtendedData xmlns:mis="www.dji.com">
-        <mis:altitude>50.0</mis:altitude>
-        <mis:autoFlightSpeed>5.0</mis:autoFlightSpeed>
+        <mis:autoFlightSpeed>2.2</mis:autoFlightSpeed>
         <mis:actionOnFinish>$ON_FINISH</mis:actionOnFinish>
         <mis:headingMode>UsePointSetting</mis:headingMode>
         <mis:gimbalPitchMode>UsePointSetting</mis:gimbalPitchMode>
@@ -161,108 +171,99 @@ xml_end = Template("""    </Folder>
 </kml>""")
 
 with open(CsvFile, newline='') as csvfile:
-    if csv.Sniffer().has_header(csvfile.read(1024)):
-        #print("Header detected !")
-        CSV_HEADER = True
-    csvfile.seek(0)
-    dialect = csv.Sniffer().sniff(csvfile.read(1024))
-    csvfile.seek(0)
-    csv_lines = csv.reader(csvfile, dialect)
-    has_heading: bool = True
-    if CSV_HEADER:
-        next(csv_lines, None)  # skip the headers
-
+    # TODO(nubby): allow for the import of other delimiters.
+    # NOTE - Required attributes:
+    #           * point_name
+    #           * lat
+    #           * lon
+    csv_lines = csv.DictReader(csvfile)
     for row in csv_lines:
-        has_heading = True if len(row) == 9 else False
-        if row:
-            print(row)
-            name = row[0]
-            lon = row[1]
-            lat = row[2]
-            if lon[0] == '_':
-                lon = lon[1:]
-            if lat[0] == '_':
-                lon = lat[1:]
-            height = row[3]
-            # Omit heading in CSV is you want to follow the wayline.
-            if not has_heading:
-                heading = None
-                gimbal = row[4]
-                speed = row[5]
-                turnmode = row[6]
-                actions_sequence = row[7]
-            else:
-                heading = row[4]
-                gimbal = row[5]
-                speed = row[6]
-                turnmode = row[7]
-                actions_sequence = row[8]
+        name = row['point_name']
+        lon = row['lon']
+        lat = row['lat']
+        if lon[0] == '_':
+            lon = lon[1:]
+        if lat[0] == '_':
+            lon = lat[1:]
+        gimbal = row['gimbal'] if 'speed' in row.keys() else DEFAULT_GIMBAL
+        heading = row['heading'] if 'speed' in row.keys() else DEFAULT_HEADING
+        height = row['height'] if 'height' in row.keys() else DEFAULT_HEIGHT
+        speed = row['speed'] if 'speed' in row.keys() else DEFAULT_SPEED
+        if 'turnmode' in row.keys():
+            turnmode = row['turnmode'] 
+        else:
+            turnmode = DEFAULT_TURNMODE
+        if 'actions_sequence' in row.keys():
+            actions_sequence = row['actions_sequence'] 
+        else:
+            actions_sequence = DEFAULT_ACTIONS_SEQUENCE
 
-            if (float(speed) > 15) or (float(speed) <= 0):
-                sys.exit('speed should be >0 or <=15 m/s for {}'.format(name))
-            if '.' not in speed:
-                speed = speed+'.0'
+        if (float(speed) > 15) or (float(speed) <= 0):
+            sys.exit('speed should be >0 or <=15 m/s for {}'.format(name))
+        """
+        if '.' not in speed:
+            speed = speed+'.0'
+        """
 
-            if '.' not in gimbal:
-                gimbal = gimbal+'.0'
+        if gimbal and '.' not in gimbal:
+            gimbal = gimbal+'.0'
 
-            if turnmode == 'AUTO':
-                turnmode = 'Auto'
-            elif turnmode == 'C':
-                turnmode = 'Clockwise'
-            elif turnmode == 'CC':
-                turnmode = 'Counterclockwise'
-            else:
-                sys.exit('turnmode shoud be AUTO C or CC for {}'.format(name))
+        if turnmode == 'AUTO':
+            turnmode = 'Auto'
+        elif turnmode == 'C':
+            turnmode = 'Clockwise'
+        elif turnmode == 'CC':
+            turnmode = 'Counterclockwise'
+        else:
+            sys.exit('turnmode shoud be AUTO C or CC for {}'.format(name))
 
-            if not has_heading:
-                XML_string += waypoint_start_no_heading.substitute(
-                    turnmode=turnmode,
-                    waypoint_number=waypoint_number,
-                    speed=speed,
-                    gimbal=gimbal
-                )
-            else:
-                XML_string += waypoint_start.substitute(
-                    turnmode=turnmode,
-                    waypoint_number=waypoint_number,
-                    speed=speed,
-                    heading=heading,
-                    gimbal=gimbal
-                )
+        if not heading:
+            XML_string += waypoint_start_no_heading.substitute(
+                turnmode=turnmode,
+                waypoint_number=waypoint_number,
+                speed=speed,
+            )
+        else:
+            XML_string += waypoint_start.substitute(
+                turnmode=turnmode,
+                waypoint_number=waypoint_number,
+                speed=speed,
+                heading=heading,
+                gimbal=gimbal
+            )
 
-            # Actions decoding
-            if actions_sequence:
-                action_list = actions_sequence.split('.')
-                for action in action_list:
-                    if action == 'SHOOT':
-                        XML_string += shoot_template.substitute()
-                    elif action == 'REC':
-                        XML_string += record_template.substitute()
-                    elif action == 'STOPREC':
-                        XML_string += stoprecord_template.substitute()
-                    # Gimbal orientation
-                    elif action[0] == 'G':
-                        XML_string += gimbal_template.substitute(
-                            gimbal_angle=action[1:])
-                    # Aircraft orientation
-                    elif action[0] == 'A':
-                        XML_string += aircraftyaw_template.substitute(
-                            aircraftyaw=action[1:])
-                    elif action[0] == 'H':
-                        if float(action[1:]) < 500:
-                            print(float(action[1:]))
-                            sys.exit(
-                                'Hover length is in ms and should be >500  for {}'.format(name))
-                        XML_string += hover_template.substitute(
-                            length=action[1:])
+        # Actions decoding
+        if actions_sequence:
+            action_list = actions_sequence.split('.')
+            for action in action_list:
+                if action == 'SHOOT':
+                    XML_string += shoot_template.substitute()
+                elif action == 'REC':
+                    XML_string += record_template.substitute()
+                elif action == 'STOPREC':
+                    XML_string += stoprecord_template.substitute()
+                # Gimbal orientation
+                elif action[0] == 'G':
+                    XML_string += gimbal_template.substitute(
+                        gimbal_angle=action[1:])
+                # Aircraft orientation
+                elif action[0] == 'A':
+                    XML_string += aircraftyaw_template.substitute(
+                        aircraftyaw=action[1:])
+                elif action[0] == 'H':
+                    if float(action[1:]) < 500:
+                        print(float(action[1:]))
+                        sys.exit(
+                            'Hover length is in ms and should be >500  for {}'.format(name))
+                    XML_string += hover_template.substitute(
+                        length=action[1:])
 
-            XML_string += "\n" + \
-                waypoint_end.substitute(lon=lon, lat=lat, height=height,)+"\n"
+        XML_string += "\n" + \
+            waypoint_end.substitute(lon=lon, lat=lat, height=height,)+"\n"
 
-            all_coordinates += all_coordinates_template.substitute(
-                lon=lon, lat=lat, height=height)+" "
-        waypoint_number += 1
+        all_coordinates += all_coordinates_template.substitute(
+            lon=lon, lat=lat, height=height)+" "
+    waypoint_number += 1
 # remove last space from coordinates string
 all_coordinates = all_coordinates[:-1]
 XML_string += xml_end.substitute(all_coordinates=all_coordinates,
@@ -270,3 +271,4 @@ XML_string += xml_end.substitute(all_coordinates=all_coordinates,
 
 with args.output as outpufile:
     outpufile.write(XML_string)
+    
