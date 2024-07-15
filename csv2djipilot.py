@@ -51,34 +51,6 @@ def _write_file(path: str, data: any):
 
 
 def csv2djipilot():
-    new_XML_string = """<?xml version="1.0" encoding="UTF-8"?>
-    <kml xmlns="http://www.opengis.net/kml/2.2" xmlns="http://www.dji.com/wpmz/1.0.2">
-      <Document xmlns="">
-        <name>chambon_small</name>
-        <open>1</open>
-        <ExtendedData xmlns:mis="www.dji.com" xmlns:wpml="http://www.dji.com/wpmz/1.0.2">
-          <mis:type>Waypoint</mis:type>
-          <mis:stationType>0</mis:stationType>
-          <wpml:globalWaypointHeadingParam>followWayline</wpml:globalWaypointHeadingParam>
-          <wpml:useGlobalHeadingParam>1</wpml:useGlobalHeadingParam>
-        </ExtendedData>
-        <Style id="waylineGreenPoly">
-          <LineStyle>
-            <color>FF0AEE8B</color>
-            <width>6</width>
-          </LineStyle>
-        </Style>
-        <Style id="waypointStyle">
-          <IconStyle>
-            <Icon>
-              <href>https://cdnen.dji-flighthub.com/static/app/images/point.png</href>
-            </Icon>
-          </IconStyle>
-        </Style>
-        <Folder>
-          <name>Waypoints</name>
-          <description>Waypoints in the Mission.</description>\n"""
-
     XML_string = """<?xml version="1.0" encoding="UTF-8"?>
 
     <kml xmlns="http://www.opengis.net/kml/2.2">
@@ -119,7 +91,7 @@ def csv2djipilot():
             <visibility>1</visibility>
             <description>Waypoint</description>
             <styleUrl>#waypointStyle</styleUrl>
-            <ExtendedData xmlns:mis="www.dji.com" xmlns:wpml="http://www.dji.com/wpmz/1.0.2">
+            <ExtendedData xmlns:mis="www.dji.com">
               <mis:useWaylineAltitude>false</mis:useWaylineAltitude>
               <mis:heading>$heading</mis:heading>
               <mis:turnMode>$turnmode</mis:turnMode>
@@ -136,8 +108,7 @@ def csv2djipilot():
             <visibility>1</visibility>
             <description>Waypoint</description>
             <styleUrl>#waypointStyle</styleUrl>
-            <ExtendedData xmlns:mis="www.dji.com" xmlns:wpml="http://www.dji.com/wpmz/1.0.2">
-              <wpml:autoFlightSpeed>2.3</wpml:autoFlightSpeed>
+            <ExtendedData xmlns:mis="www.dji.com">
               <mis:useWaylineAltitude>true</mis:useWaylineAltitude>
               <mis:speed>2.3</mis:speed>#
               <mis:useWaylineHeadingMode>true</mis:useWaylineHeadingMode>
@@ -252,13 +223,13 @@ def csv2djipilot():
                 sys.exit('turnmode shoud be AUTO C or CC for {}'.format(name))
 
             if not heading:
-                new_XML_string += waypoint_start_no_heading.substitute(
+                XML_string += waypoint_start_no_heading.substitute(
                     turnmode=turnmode,
                     waypoint_number=waypoint_number,
                     speed=speed,
                 )
             else:
-                new_XML_string += waypoint_start.substitute(
+                XML_string += waypoint_start.substitute(
                     turnmode=turnmode,
                     waypoint_number=waypoint_number,
                     speed=speed,
@@ -271,28 +242,28 @@ def csv2djipilot():
                 action_list = actions_sequence.split('.')
                 for action in action_list:
                     if action == 'SHOOT':
-                        new_XML_string += shoot_template.substitute()
+                        XML_string += shoot_template.substitute()
                     elif action == 'REC':
-                        new_XML_string += record_template.substitute()
+                        XML_string += record_template.substitute()
                     elif action == 'STOPREC':
-                        new_XML_string += stoprecord_template.substitute()
+                        XML_string += stoprecord_template.substitute()
                     # Gimbal orientation
                     elif action[0] == 'G':
-                        new_XML_string += gimbal_template.substitute(
+                        XML_string += gimbal_template.substitute(
                             gimbal_angle=action[1:])
                     # Aircraft orientation
                     elif action[0] == 'A':
-                        new_XML_string += aircraftyaw_template.substitute(
+                        XML_string += aircraftyaw_template.substitute(
                             aircraftyaw=action[1:])
                     elif action[0] == 'H':
                         if float(action[1:]) < 500:
                             print(float(action[1:]))
                             sys.exit(
                                 'Hover length is in ms and should be >500  for {}'.format(name))
-                        new_XML_string += hover_template.substitute(
+                        XML_string += hover_template.substitute(
                             length=action[1:])
 
-            new_XML_string += "\n" + \
+            XML_string += "\n" + \
                 waypoint_end.substitute(lon=lon, lat=lat, height=height,)+"\n"
 
             all_coordinates += all_coordinates_template.substitute(
@@ -300,11 +271,11 @@ def csv2djipilot():
         waypoint_number += 1
 # remove last space from coordinates string
     all_coordinates = all_coordinates[:-1]
-    new_XML_string += xml_end.substitute(all_coordinates=all_coordinates,
+    XML_string += xml_end.substitute(all_coordinates=all_coordinates,
                                      ON_FINISH=ON_FINISH)
-    #_write_file(path=args.output, data=new_XML_string)
+    #_write_file(path=args.output, data=XML_string)
     with args.output as outpoofile:
-        outpoofile.write(new_XML_string)
+        outpoofile.write(XML_string)
     
 
 if __name__ == "__main__":
